@@ -1,0 +1,21 @@
+{
+  "name": "vardigo-case-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VardiGO case study REST API (Express + JSON file store)",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "reset": "node src/scripts/reset.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

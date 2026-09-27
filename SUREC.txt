@@ -50,6 +50,8 @@ VARDIGO CASE — SÜREÇ NOTU
   ayarları (Info.plist'te local network ATS izni) yaptım ama çalıştırıp doğrulayamadım.
 - Telefon frame'i gerçek cihazda anlamsız olduğu için opsiyonel mod yaptım:
   --dart-define=FRAME=true ile spec'teki bezel, Dynamic Island ve status bar çiziliyor.
+- İki sayfa iki farklı kullanıcıya (işveren / iş arayan) ait. Tek uygulamada ikisini de
+  gösterebilmek için açılışa minimal bir rol seçim ekranı ekledim; tasarım kapsamı dışında.
 
 4) BİLEREK YAPMADIKLARIM
 - Gerçek auth (JWT, SMS): brief'e göre sabit token yeterli.

@@ -1,8 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="vardigo_case"
+        android:label="VardiGO"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
+        <!-- usesCleartextTraffic: the case backend runs on plain http://10.0.2.2:3000 locally.
+             A production build would use HTTPS and drop this flag. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

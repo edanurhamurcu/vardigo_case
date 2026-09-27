@@ -1,0 +1,240 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Vardigo Case API",
+    "version": "1.0.0",
+    "description": "Eşleşen Personeller (işveren) ve Görüşme Talepleri (iş arayan) için REST API.\n\n1. **POST /auth/login** ile token al (`dev-employer` veya `dev-worker`).\n2. Sağ üstteki **Authorize** butonuna token'ı yapıştır.\n\nTüm cevaplar `{ ok, data }` veya `{ ok: false, error: { code, message } }` zarfındadır."
+  },
+  "servers": [{ "url": "http://localhost:3000/api" }],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Candidates", "description": "İşveren" },
+    { "name": "Offers", "description": "İşveren gönderir, iş arayan yanıtlar" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "description": "dev-employer veya dev-worker" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "OFFER_STATE" },
+              "message": { "type": "string", "example": "Bu teklif zaten yanıtlanmış" }
+            }
+          }
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "w_merve" },
+          "name": { "type": "string", "example": "Merve Y." },
+          "rating": { "type": "string", "example": "4.9" },
+          "attend": { "type": "string", "example": "%100 katılım" },
+          "km": { "type": "string", "example": "4.9 km" },
+          "kmValue": { "type": "number", "example": 4.9 },
+          "photo": { "type": "string", "example": "/assets/photos/merve.png" },
+          "online": { "type": "boolean" },
+          "perfect": { "type": "boolean", "description": "score >= 80" },
+          "score": { "type": "integer", "example": 92 },
+          "expectedPay": { "type": "integer", "example": 25000 },
+          "payMatches": { "type": "boolean" }
+        }
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "o_garson" },
+          "title": { "type": "string", "example": "Garson" },
+          "place": { "type": "string", "example": "Zarif Cheff Restaurant" },
+          "pay": { "type": "string", "example": "45.000" },
+          "payValue": { "type": "integer", "example": 45000 },
+          "logo": { "type": "string", "example": "/assets/logos/zarif.svg" },
+          "district": { "type": "string", "example": "Kadıköy" },
+          "when": { "type": "string", "example": "16 Ağu · 12:00 - 16:00" },
+          "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "expired"] },
+          "remain": { "type": "string", "nullable": true, "example": "21 saat 32 dakika" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": { "description": "Doğrulama hatası", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Token yok / geçersiz / yanlış rol", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Kayıt bulunamadı", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Conflict": { "description": "İş kuralı ihlali", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sabit demo hesabıyla giriş",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "role": { "type": "string", "enum": ["employer", "worker"] } } },
+              "example": { "role": "employer" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token",
+            "content": { "application/json": { "example": { "ok": true, "data": { "token": "dev-employer", "role": "employer", "name": "Ferhat S." } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/candidates": {
+      "get": {
+        "tags": ["Candidates"],
+        "summary": "Eşleşen aday listesi",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "tab", "in": "query", "schema": { "type": "string", "enum": ["perfect", "similar"] } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["recommended", "near", "rating"], "default": "recommended" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Adaylar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalPerfect": { "type": "integer", "example": 26 },
+                        "totalSimilar": { "type": "integer", "example": 16 },
+                        "selectedHint": { "type": "integer", "example": 1 },
+                        "candidates": { "type": "array", "items": { "$ref": "#/components/schemas/Candidate" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/offers": {
+      "post": {
+        "tags": ["Offers"],
+        "summary": "Seçili adaylara görüşme talebi gönder (işveren)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "workerIds": { "type": "array", "items": { "type": "string" } } } },
+              "example": { "workerIds": ["w_merve", "w_derya"] }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Oluşturulan talepler",
+            "content": { "application/json": { "example": { "ok": true, "data": { "created": [{ "id": "o_1a2b3c4d", "workerId": "w_merve", "status": "pending" }] } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      },
+      "get": {
+        "tags": ["Offers"],
+        "summary": "Talepleri sekmeye göre listele (iş arayan)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "answered", "expired"], "default": "pending" }, "description": "answered = accepted + rejected" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Talepler",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "pendingCount": { "type": "integer" },
+                        "offers": { "type": "array", "items": { "$ref": "#/components/schemas/Offer" } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/offers/{id}": {
+      "get": {
+        "tags": ["Offers"],
+        "summary": "Talep detayı",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "o_garson" }],
+        "responses": {
+          "200": { "description": "Detay (offer + city + note)" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/offers/{id}/accept": {
+      "post": {
+        "tags": ["Offers"],
+        "summary": "İlgileniyorum",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "o_garson" }],
+        "responses": {
+          "200": { "description": "status=accepted", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Offer" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/offers/{id}/reject": {
+      "post": {
+        "tags": ["Offers"],
+        "summary": "İlgilenmiyorum",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "o_barista" }],
+        "responses": {
+          "200": { "description": "status=rejected", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "type": "boolean" }, "data": { "$ref": "#/components/schemas/Offer" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "",
+        "responses": { "200": { "description": "up" } }
+      }
+    }
+  }
+}

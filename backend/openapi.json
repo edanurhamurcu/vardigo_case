@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Vardigo Case API",
+    "title": "VardiGO Case API",
     "version": "1.0.0",
     "description": "Eşleşen Personeller (işveren) ve Görüşme Talepleri (iş arayan) için REST API.\n\n1. **POST /auth/login** ile token al (`dev-employer` veya `dev-worker`).\n2. Sağ üstteki **Authorize** butonuna token'ı yapıştır.\n\nTüm cevaplar `{ ok, data }` veya `{ ok: false, error: { code, message } }` zarfındadır."
   },
@@ -114,8 +114,8 @@
                     "data": {
                       "type": "object",
                       "properties": {
-                        "totalPerfect": { "type": "integer", "example": 26 },
-                        "totalSimilar": { "type": "integer", "example": 16 },
+                        "totalPerfect": { "type": "integer", "example": 2, "description": "score >= 80 olan aday sayısı (veriden hesaplanır)" },
+                        "totalSimilar": { "type": "integer", "example": 2, "description": "score < 80 olan aday sayısı (veriden hesaplanır)" },
                         "selectedHint": { "type": "integer", "example": 1 },
                         "candidates": { "type": "array", "items": { "$ref": "#/components/schemas/Candidate" } }
                       }
@@ -232,7 +232,7 @@
     "/health": {
       "get": {
         "tags": ["Auth"],
-        "summary": "",
+        "summary": "Sağlık kontrolü",
         "responses": { "200": { "description": "up" } }
       }
     }

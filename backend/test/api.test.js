@@ -62,7 +62,9 @@ test('employer gets 4 candidates, filtered and sorted', async () => {
   const all = await call('GET', '/candidates', { token });
   assert.equal(all.status, 200);
   assert.equal(all.json.data.candidates.length, 4);
-  assert.equal(all.json.data.totalPerfect, 26);
+  // Tab counts are derived from data: score >= 80 → Merve (92), Ferhat (88)
+  assert.equal(all.json.data.totalPerfect, 2);
+  assert.equal(all.json.data.totalSimilar, 2);
   assert.equal(all.json.data.candidates[0].id, 'w_merve'); // highest score first
 
   const perfect = await call('GET', '/candidates?tab=perfect', { token });

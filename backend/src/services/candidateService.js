@@ -37,14 +37,27 @@ function listCandidates(db, { tab, sort = 'recommended' } = {}) {
     throw errors.validation(`sort şunlardan biri olmalı: ${SORTS.join(', ')}`);
   }
 
-  let candidates = db.state.candidates.map(toDto);
+  const all = db.state.candidates.map(toDto);
+
+  // Tab counts are computed from the data with the same business rule as the filter
+  // (score >= 80). The case spec allowed fixed labels (26 / 16, "sabit etiket olabilir"),
+  // but then the header would claim 26 people while the list shows 2. With a real
+  // database this would be a COUNT over the job's full match set, e.g.
+  //   SELECT COUNT(*) FILTER (WHERE score >= 80) AS perfect,
+  //          COUNT(*) FILTER (WHERE score <  80) AS similar
+  //   FROM matches WHERE job_id = $1;
+  // and the list itself would be paginated.
+  const totalPerfect = all.filter((c) => c.perfect).length;
+  const totalSimilar = all.length - totalPerfect;
+
+  let candidates = all;
   if (tab === 'perfect') candidates = candidates.filter((c) => c.perfect);
   if (tab === 'similar') candidates = candidates.filter((c) => !c.perfect);
   candidates.sort(sorters[sort]);
 
   return {
-    totalPerfect: db.state.labels.totalPerfect,
-    totalSimilar: db.state.labels.totalSimilar,
+    totalPerfect,
+    totalSimilar,
     selectedHint: 1,
     candidates,
   };

@@ -1,0 +1,55 @@
+VARDIGO CASE — SÜREÇ NOTU
+
+1) KULLANDIĞIM ARAÇLAR / MODELLER
+- Claude (Anthropic), Claude desktop uygulaması — Cowork modu. Model: claude-opus-5-5.
+  Kod üretimi, code review, spec analizi ve commit planı için kullandım; üretilen kodu
+  kendi makinemde çalıştırıp (flutter analyze/test, npm test) doğruladım.
+- Flutter 3.47.5 / Dart 3.13.4, Android Studio (emulator), Node.js 22, Git.
+- Paketler: flutter_riverpod, dio, flutter_svg · express 5, cors, swagger-ui-express.
+
+2) SIRAYLA NE YAPTIM
+1. Analiz: brief, spec'ler, seed ve iki referans PNG'yi inceledim; PNG ile text spec
+   arasındaki çelişkileri listeledim (aşağıda).
+2. İskelet: repo yapısı (backend/ + mobile/), Flutter projesi, Express skeleton.
+3. API: auth → candidates → offers; business rule'lar, standart response/error formatı, JSON file store.
+   Spec'teki "minimum test" senaryosunu integration test olarak yazdım.
+4. Token'lar: spec'teki renk / tipografi / gölge değerlerini AppColors, AppTextStyles,
+   AppShadows olarak birebir aynı isimlerle tanımladım; Urbanist (liga/calt kapalı).
+5. Sayfa 1 (Eşleşen Personeller): Riverpod Notifier, multi-select, sort, offer gönderme.
+6. Sayfa 2 (Görüşme Talepleri): 3 tab, accept/reject, empty state'ler, countdown, detay.
+7. Review: kendi backend kodumu review ettim; worker'ın offer'larının kendi hesabına
+   scope'lanması ve yazma hatasında state tutarlılığı (transaction + rollback) eksiklerini
+   bulup düzelttim, testlerini ekledim. Swagger UI ekledim.
+8. Cilalama:
+   - Tab sayılarını (26/16) sabit label yerine gerçek veriden hesaplanır yaptım.
+   - README'yi sadeleştirdim, test edilen platformu ve iOS kısıtını ekledim.
+
+3) TAKILDIĞIM NOKTALAR
+- Çelişkili kaynaklar: PNG'de 3 kart da "Garson / ₺1.500", seed'de Garson/Barista/Komi
+  (45.000 / 38.000 / 32.000); Sayfa 2 başlığı PNG'de sola, spec'te ortaya hizalı; Sayfa 1
+  kartlarında PNG'de "Ücret beklentisi" satırı var, spec'te yok.
+  Çözüm: brief'teki kaynak sırasını kural yaptım — görsel için PNG, veri için seed.
+  Ücret satırını PNG'ye uymak için ekledim ve değerlerini seed'e field olarak koydum.
+- "%100 Eşleşme" tab'ı: PNG'de 4 kişi görünüyor ama iş kuralı score ≥ 80 diyor (2 kişi).
+  Çözüm: iş kuralını uyguladım (tab başına 2 kişi). Spec header'daki (26)/(16) için
+  sabit label'a izin veriyordu; ama o zaman header 26 kişi derken listede 2 kişi olurdu.
+  Sayıları filtreyle aynı kuraldan (score ≥ 80) hesapladım, böylece header ve liste hep
+  tutarlı. Seed'i uydurma kişilerle çoğaltmadım (brief: aynı isimler / foto). Gerçek
+  sistemde bu sayılar iş için tüm eşleşmelerden COUNT ile gelir, liste paginated döner.
+  Bedeli: sayılar referans PNG'deki 26/16 yerine 2/2 görünüyor (bilinçli tercih).
+- iOS'u test edemedim: Windows'ta çalıştığım için iOS simulator / Xcode yok. Referans
+  iPhone ekranı (390×844) olduğundan Android emulator'da 1170×2532 px, 5.8" (xxhdpi)
+  custom hardware profile ile birebir 390×844 dp elde ettim. iOS tarafı için gerekli
+  ayarları (Info.plist'te local network ATS izni) yaptım ama çalıştırıp doğrulayamadım.
+- Telefon frame'i gerçek cihazda anlamsız olduğu için opsiyonel mod yaptım:
+  --dart-define=FRAME=true ile spec'teki bezel, Dynamic Island ve status bar çiziliyor.
+
+4) BİLEREK YAPMADIKLARIM
+- Gerçek auth (JWT, SMS): brief'e göre sabit token yeterli.
+- Postgres / Redis: JSON file store yeterli; storage db.js arkasında izole, değiştirilebilir.
+- Schema validation kütüphanesi (zod/joi), structured logging, rate limiting.
+- Countdown'un client'ta canlı akması: remain server'da hesaplanıyor, pull-to-refresh
+  ile güncelleniyor.
+- Aciliyet rengi: PNG'de "5 saat" kırmızı, "21 saat" siyah; eşiği 6 saat olarak ben
+  belirledim (spec'te yok).
+- Yanlış rolde 403 yerine 401: spec açıkça 401 istiyor.

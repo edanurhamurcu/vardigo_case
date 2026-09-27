@@ -1,4 +1,4 @@
-# Vardigo — Case Study (2 ekran + API)
+# VardiGO — Case Study (2 ekran + API)
 
 Flutter (Android / iOS) mobil uygulama + Node.js / Express REST API.
 
@@ -129,5 +129,6 @@ lib/
 
 Ayrıntılar `SUREC.txt` içinde. Kısaca:
 - Referans PNG ile text spec çeliştiğinde brief'teki kaynak sırasına göre **PNG esas alındı**, data seed'den geldi.
+- Tab sayıları spec'teki sabit 26 / 16 label'ı yerine veriden hesaplanır (score ≥ 80 kuralı), böylece header ile liste tutarlı kalır. Gerçek sistemde bu sayılar job'a ait tüm eşleşmelerden `COUNT` ile gelir ve liste paginated döner.
 - Tek demo worker hesabı var; employer'ın gönderdiği tüm offer'lar bu hesaba düşer.
 - Sayfa 1'deki "Ücret beklentisi" satırı PNG'de olduğu için eklendi; değerler seed'e field olarak eklendi.

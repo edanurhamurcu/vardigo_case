@@ -18,7 +18,6 @@ function buildInitialState(now = Date.now()) {
   return {
     users: seed.users,
     candidates: seed.candidates,
-    labels: seed.labels,
     job: seed.job,
     offers: seed.offers.map((offer) => ({
       ...offer,

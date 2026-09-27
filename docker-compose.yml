@@ -1,0 +1,10 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    volumes:
+      # accept/reject state survives container restarts
+      - api-data:/app/data
+volumes:
+  api-data:

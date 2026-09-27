@@ -12,7 +12,10 @@ import '../../domain/candidate.dart';
 /// Candidate card — radius 20, px16 py12.
 /// Selected: #EBF1FF background, no border, 4px blue strip on the left
 /// (CSS "inset 4px 0 0 #335CFF"), filled checkbox.
-class CandidateCard extends StatelessWidget {
+///
+/// Selecting plays a short "push" animation: the card nudges right and springs
+/// back while the strip slides in. The resting state matches the reference.
+class CandidateCard extends StatefulWidget {
   const CandidateCard({
     super.key,
     required this.candidate,
@@ -24,86 +27,168 @@ class CandidateCard extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  @override
+  State<CandidateCard> createState() => _CandidateCardState();
+}
+
+class _CandidateCardState extends State<CandidateCard> with TickerProviderStateMixin {
   static const _radius = BorderRadius.all(Radius.circular(20));
+  static const _nudgeDistance = 6.0;
+
+  /// 0 → 1: strip width 0 → 4px.
+  late final AnimationController _strip = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+    value: widget.selected ? 1 : 0,
+  );
+
+  /// Drives the right-and-back nudge.
+  late final AnimationController _nudge = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 380),
+  );
+
+  late final Animation<double> _nudgeOffset = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 0.0, end: _nudgeDistance).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: _nudgeDistance, end: 0.0).chain(CurveTween(curve: Curves.easeOutBack)),
+      weight: 65,
+    ),
+  ]).animate(_nudge);
+
+  late final Animation<double> _stripWidth = CurvedAnimation(
+    parent: _strip,
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  @override
+  void didUpdateWidget(CandidateCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected == oldWidget.selected) return;
+
+    if (widget.selected) {
+      _strip.forward();
+      // Respect the OS "reduce motion" setting.
+      if (!MediaQuery.disableAnimationsOf(context)) _nudge.forward(from: 0);
+    } else {
+      _strip.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _strip.dispose();
+    _nudge.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final candidate = widget.candidate;
+    final selected = widget.selected;
+
     return Semantics(
       button: true,
       selected: selected,
       label: '${candidate.name}, puan ${candidate.rating}, ${candidate.attend}, ${candidate.km}',
       excludeSemantics: true,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLighter : AppColors.white,
-          borderRadius: _radius,
-          // Transparent border when selected keeps the content from shifting by 1px.
-          border: Border.all(color: selected ? const Color(0x00000000) : AppColors.slate200),
-          boxShadow: selected ? AppShadows.cardSelected : AppShadows.card,
-        ),
-        child: ClipRRect(
-          borderRadius: _radius,
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              onTap: onTap,
-              child: Stack(
-                children: [
-                  if (selected)
-                    const Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 4,
-                      child: ColoredBox(color: AppColors.primary),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            PersonAvatar(url: candidate.photoUrl, online: candidate.online),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    candidate.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.title18,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _MetaRow(candidate: candidate),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            AppCheckbox(checked: selected),
-                          ],
-                        ),
-                        if (candidate.expectedPay case final pay?) ...[
-                          const SizedBox(height: 12),
-                          _PayExpectation(
-                            pay: pay,
-                            matches: candidate.payMatches ?? false,
-                            onSelectedCard: selected,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_strip, _nudge]),
+          // The card body is built once and only moved/overpainted per frame.
+          builder: (context, child) => Transform.translate(
+            offset: Offset(_nudgeOffset.value, 0),
+            child: CustomPaint(
+              // Painted over the whole card (border box) so the strip hugs the outer
+              // rounded corners exactly like the CSS inset shadow in the reference.
+              foregroundPainter: _stripWidth.value > 0
+                  ? _InsetLeftStripPainter(width: 4 * _stripWidth.value)
+                  : null,
+              child: child,
+            ),
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.primaryLighter : AppColors.white,
+              borderRadius: _radius,
+              // Transparent border when selected keeps the content from shifting by 1px.
+              border: Border.all(color: selected ? const Color(0x00000000) : AppColors.slate200),
+              boxShadow: selected ? AppShadows.cardSelected : AppShadows.card,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    PersonAvatar(url: candidate.photoUrl, online: candidate.online),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            candidate.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.title18,
                           ),
+                          const SizedBox(height: 4),
+                          _MetaRow(candidate: candidate),
                         ],
-                      ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
+                    AppCheckbox(checked: selected),
+                  ],
+                ),
+                if (candidate.expectedPay case final pay?) ...[
+                  const SizedBox(height: 12),
+                  _PayExpectation(
+                    pay: pay,
+                    matches: candidate.payMatches ?? false,
+                    onSelectedCard: selected,
                   ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// Recreates CSS `box-shadow: inset 4px 0 0 #335CFF` on a rounded card:
+/// the card's rounded rect minus the same rect shifted [width] px to the right.
+/// The result follows the corner curves (a crescent) instead of a flat bar that
+/// gets clipped away at the corners.
+class _InsetLeftStripPainter extends CustomPainter {
+  const _InsetLeftStripPainter({required this.width});
+
+  final double width;
+
+  static const _radius = Radius.circular(20);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final outer = RRect.fromRectAndRadius(Offset.zero & size, _radius);
+    final strip = Path.combine(
+      PathOperation.difference,
+      Path()..addRRect(outer),
+      Path()..addRRect(outer.shift(Offset(width, 0))),
+    );
+    canvas.drawPath(strip, Paint()..color = AppColors.primary);
+  }
+
+  @override
+  bool shouldRepaint(_InsetLeftStripPainter oldDelegate) => oldDelegate.width != width;
 }
 
 /// ★ 4.9 | 🛡 %100 katılım | 📍 4.9 km  — 12/500 slate-700, icon-text gap 4.

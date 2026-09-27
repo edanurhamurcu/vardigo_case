@@ -1,0 +1,46 @@
+### VS Code REST Client / IntelliJ HTTP client ile çalıştırılabilir örnek istekler
+@base = http://localhost:3000/api
+
+### İşveren girişi
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "role": "employer" }
+
+### Aday listesi (%100 eşleşme, önerilen sıra)
+GET {{base}}/candidates?tab=perfect&sort=recommended
+Authorization: Bearer dev-employer
+
+### Görüşme talebi gönder
+POST {{base}}/offers
+Authorization: Bearer dev-employer
+Content-Type: application/json
+
+{ "workerIds": ["w_merve", "w_derya"] }
+
+### Boş seçim → 400
+POST {{base}}/offers
+Authorization: Bearer dev-employer
+Content-Type: application/json
+
+{ "workerIds": [] }
+
+### İş arayan: bekleyen talepler
+GET {{base}}/offers?status=pending
+Authorization: Bearer dev-worker
+
+### Kabul et
+POST {{base}}/offers/o_garson/accept
+Authorization: Bearer dev-worker
+
+### Reddet
+POST {{base}}/offers/o_barista/reject
+Authorization: Bearer dev-worker
+
+### Cevaplananlar
+GET {{base}}/offers?status=answered
+Authorization: Bearer dev-worker
+
+### Süresi dolanlar
+GET {{base}}/offers?status=expired
+Authorization: Bearer dev-worker

@@ -23,6 +23,13 @@ VARDIGO CASE — SÜREÇ NOTU
 8. Cilalama:
    - Tab sayılarını (26/16) sabit label yerine gerçek veriden hesaplanır yaptım.
    - README'yi sadeleştirdim, test edilen platformu ve iOS kısıtını ekledim.
+   - Seçili kartın sol mavi şeridi: düz 4px bar köşelerde kırpılıp inceliyordu. Spec'teki
+     CSS 'inset 4px 0 0' gölgesini CustomPainter ile birebir çizdim (köşeyi saran hilal).
+   - Kart seçimi: ripple yerine kısa bir 'itme' animasyonu (kart sağa kayıp yerine oturur,
+     şerit soldan kayarak gelir); son hâli referansla aynı, 'reduce motion' açıksa kapalı.
+     Performans: kartın içeriği animasyon boyunca yeniden build edilmiyor (AnimatedBuilder
+     child); her karede sadece Transform ve şeridi çizen painter çalışıyor, süre 220-380 ms.
+   - [emulator'da referansla yan yana karşılaştırıp düzelttiğim UI farkları buraya]
 
 3) TAKILDIĞIM NOKTALAR
 - Çelişkili kaynaklar: PNG'de 3 kart da "Garson / ₺1.500", seed'de Garson/Barista/Komi
@@ -52,4 +59,7 @@ VARDIGO CASE — SÜREÇ NOTU
   ile güncelleniyor.
 - Aciliyet rengi: PNG'de "5 saat" kırmızı, "21 saat" siyah; eşiği 6 saat olarak ben
   belirledim (spec'te yok).
+- Sıralama seçim ekranı: spec'e uyup sort chip'e her dokunuşta sıradaki seçeneğe geçen
+  döngüyü (Önerilen → En Yakın → Puan) uyguladım. Kullanıcı seçenekleri önceden göremediği
+  için gerçek üründe seçenekleri bir bottom sheet'te listeleyip seçtirmek daha iyi olur.
 - Yanlış rolde 403 yerine 401: spec açıkça 401 istiyor.
